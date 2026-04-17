@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LILI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:#000;color:#fff;
+  font-family:'Courier New',monospace;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+body::before{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(201,168,76,0.04)1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,0.04)1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;
+}
+.scanline{position:absolute;top:-2px;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.2),transparent);animation:scan 5s linear infinite;z-index:1;pointer-events:none}
+@keyframes scan{0%{top:-2px}100%{top:100%}}
+.br{position:absolute;width:32px;height:32px;z-index:2;pointer-events:none}
+.br::before,.br::after{content:'';position:absolute;background:rgba(201,168,76,0.45)}
+.tl{top:12px;left:12px}.tl::before{top:0;left:0;width:100%;height:1.5px}.tl::after{top:0;left:0;width:1.5px;height:100%}
+.tr{top:12px;right:12px}.tr::before{top:0;right:0;width:100%;height:1.5px}.tr::after{top:0;right:0;width:1.5px;height:100%}
+.bl{bottom:12px;left:12px}.bl::before{bottom:0;left:0;width:100%;height:1.5px}.bl::after{bottom:0;left:0;width:1.5px;height:100%}
+.brr{bottom:12px;right:12px}.brr::before{bottom:0;right:0;width:100%;height:1.5px}.brr::after{bottom:0;right:0;width:1.5px;height:100%}
+.hud{position:absolute;top:50%;transform:translateY(-50%);z-index:5;display:flex;flex-direction:column;gap:6px}
+.hudl{left:5px}.hudr{right:5px}
+.hi{font-size:6px;letter-spacing:0.18em;color:rgba(201,168,76,0.2);text-transform:uppercase;writing-mode:vertical-lr;border-left:1px solid rgba(201,168,76,0.08);padding-left:3px}
+
+.wrap{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;width:100%;max-width:640px;padding:0 14px}
+
+.topbar{width:100%;display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid rgba(201,168,76,0.12);margin-bottom:12px}
+.tl2{font-size:8px;letter-spacing:0.28em;color:rgba(201,168,76,0.55);text-transform:uppercase}
+.tr2{font-size:8px;letter-spacing:0.18em;color:rgba(201,168,76,0.3)}
+.sd{display:inline-block;width:5px;height:5px;background:#4CAF50;border-radius:50%;margin-right:5px;animation:bl2 2s infinite}
+@keyframes bl2{0%,100%{opacity:1}50%{opacity:.3}}
+
+.core{position:relative;width:150px;height:150px;margin-bottom:8px}
+canvas#hc{position:absolute;top:0;left:0;width:100%;height:100%}
+.nm{font-size:10px;letter-spacing:0.48em;text-transform:uppercase;color:rgba(201,168,76,0.88);text-align:center;margin-bottom:2px;text-shadow:0 0 18px rgba(201,168,76,0.35)}
+.sb2{font-size:7px;letter-spacing:0.22em;color:rgba(201,168,76,0.3);text-align:center;margin-bottom:12px;text-transform:uppercase}
+
+/* SETUP */
+.setup{width:100%;display:flex;gap:6px;align-items:center;padding:8px 12px;border:1px solid rgba(201,168,76,0.18);background:rgba(201,168,76,0.02);margin-bottom:8px}
+.setup.ok{border-color:rgba(76,175,80,0.3);background:rgba(76,175,80,0.02)}
+.slb{font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(201,168,76,0.45);white-space:nowrap}
+.aki{flex:1;background:transparent;border:none;border-bottom:1px solid rgba(201,168,76,0.2);color:#E8E6DF;font-family:'Courier New',monospace;font-size:10px;padding:3px 5px;outline:none}
+.aki::placeholder{color:rgba(201,168,76,0.18)}
+.cbtn{background:transparent;border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.65);font-family:'Courier New',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;padding:4px 10px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.cbtn:hover{background:rgba(201,168,76,0.08);color:#C9A84C}
+.cst{font-size:8px;color:rgba(201,168,76,0.35);white-space:nowrap}
+.cst.ok{color:#4CAF50}
+
+/* VOICE SELECTOR */
+.vsel{width:100%;display:flex;gap:5px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
+.vlb{font-size:7px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(201,168,76,0.3);margin-right:3px;align-self:center}
+.vt{font-size:7px;letter-spacing:0.1em;padding:3px 9px;border:1px solid rgba(201,168,76,0.15);color:rgba(201,168,76,0.3);cursor:pointer;text-transform:uppercase;transition:all .2s;background:transparent;font-family:'Courier New',monospace}
+.vt.on{border-color:rgba(201,168,76,0.55);color:rgba(201,168,76,0.88)}
+
+/* WAVE */
+.wz{width:100%;height:36px;margin-bottom:8px}
+canvas#wc{width:100%;height:100%}
+
+/* RESPONSE */
+.rz{width:100%;min-height:64px;max-height:130px;overflow-y:auto;padding:10px 14px;border:1px solid rgba(201,168,76,0.18);border-left:2px solid rgba(201,168,76,0.45);background:rgba(201,168,76,0.025);font-size:12px;line-height:1.85;color:rgba(232,230,223,0.88);margin-bottom:8px;position:relative}
+.rz::before{content:'LILI';position:absolute;top:-7px;left:11px;font-size:7px;letter-spacing:0.28em;color:rgba(201,168,76,0.6);background:#000;padding:0 5px}
+.rz::-webkit-scrollbar{width:2px}
+.rz::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.28)}
+.cb{display:inline-block;width:7px;height:12px;background:rgba(201,168,76,0.75);margin-left:2px;vertical-align:middle;animation:cbl .7s infinite}
+@keyframes cbl{0%,100%{opacity:1}50%{opacity:0}}
+
+/* INPUT */
+.ir{width:100%;display:flex;gap:7px;align-items:center;margin-bottom:8px}
+.ti{flex:1;background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.18);color:#E8E6DF;font-family:'Courier New',monospace;font-size:12px;padding:8px 11px;outline:none;transition:border-color .2s}
+.ti:focus{border-color:rgba(201,168,76,0.45)}
+.ti::placeholder{color:rgba(201,168,76,0.2);font-style:italic}
+.hb{background:transparent;border:1px solid rgba(201,168,76,0.38);color:rgba(201,168,76,0.78);font-family:'Courier New',monospace;font-size:8px;letter-spacing:0.18em;text-transform:uppercase;padding:8px 12px;cursor:pointer;transition:all .2s;height:36px;white-space:nowrap}
+.hb:hover:not(:disabled){background:rgba(201,168,76,0.1);color:#C9A84C;box-shadow:0 0 8px rgba(201,168,76,0.1)}
+.hb:disabled{opacity:0.3;cursor:not-allowed}
+.mb{width:36px;height:36px;border-radius:50%;border:1px solid rgba(201,168,76,0.32);background:transparent;color:rgba(201,168,76,0.7);font-size:14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mb.on{border-color:#E24B4A;color:#E24B4A;animation:mp 1s infinite}
+@keyframes mp{0%,100%{box-shadow:0 0 6px rgba(226,75,74,0.25)}50%{box-shadow:0 0 18px rgba(226,75,74,0.5)}}
+
+.bb{width:100%;display:flex;justify-content:space-between;border-top:1px solid rgba(201,168,76,0.08);padding-top:7px;font-size:7px;letter-spacing:0.15em;color:rgba(201,168,76,0.22);text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="br tl"></div><div class="br tr"></div><div class="br bl"></div><div class="br brr"></div>
+<div class="hud hudl"><div class="hi">PANPANGO</div><div class="hi">PHASE·01</div><div class="hi">CONAKRY</div></div>
+<div class="hud hudr"><div class="hi">SÉCURISÉ</div><div class="hi">8·EXPERTS</div><div class="hi">EN·LIGNE</div></div>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="tl2"><span class="sd"></span>LILI — SYSTÈME ACTIF</div>
+    <div class="tr2" id="clk">--:--:--</div>
+  </div>
+
+  <div class="core"><canvas id="hc" width="150" height="150"></canvas></div>
+  <div class="nm">L · I · L · I</div>
+  <div class="sb2">Chef de Cabinet · 8 Experts · ElevenLabs</div>
+
+  <div class="setup" id="sz">
+    <span class="slb">EL Key</span>
+    <input type="password" class="aki" id="elk" placeholder="Colle ta clé ElevenLabs ici...">
+    <button class="cbtn" onclick="connectEL()">Connecter</button>
+    <span class="cst" id="est">Non connecté</span>
+  </div>
+
+  <div class="vsel">
+    <span class="vlb">Voix</span>
+    <div class="vt on" data-vid="XB0fDUnXU5powFXDhCwa" onclick="pickV(this)">Charlotte</div>
+    <div class="vt" data-vid="Xb7hH8MSUJpSbSDYk0k2" onclick="pickV(this)">Alice</div>
+    <div class="vt" data-vid="9BWtsMINqrJLrRacOk9x" onclick="pickV(this)">Aria</div>
+    <div class="vt" data-vid="pFZP5JQG7iQjIQuC4Bku" onclick="pickV(this)">Lily</div>
+    <div class="vt" id="bvt" onclick="useBV()" style="border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.25)">Navigateur</div>
+  </div>
+
+  <div class="wz"><canvas id="wc" width="612" height="36"></canvas></div>
+
+  <div class="rz" id="rz"><span id="rt">En attente de vos ordres.</span></div>
+
+  <div class="ir">
+    <button class="mb" id="mb" onclick="togMic()" title="Parler à Lili">🎤</button>
+    <input type="text" class="ti" id="ti" placeholder="Ordre pour Lili... (Entrée)" onkeydown="if(event.key==='Enter')send()">
+    <button class="hb" id="sb" onclick="send()">Transmettre</button>
+  </div>
+
+  <div class="bb">
+    <span id="sm">PRÊT</span>
+    <span id="vm">VOIX: NAVIGATEUR</span>
+    <span id="mc">MSG: 0</span>
+  </div>
+</div>
+
+<script>
+// CLOCK
+setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})},1000);
+
+// HOLO
+const hc=document.getElementById('hc'),hx=hc.getContext('2d');
+let ha=0,hs='idle';
+function dh(){
+  const W=150,H=150,cx=75,cy=75,t=Date.now()/1000,g='rgba(201,168,76,';
+  hx.clearRect(0,0,W,H);
+  const sp=hs==='thinking'?.5+.5*Math.sin(t*10):hs==='speaking'?.5+.5*Math.sin(t*14):.5+.5*Math.sin(t*1.5);
+  [82,68,56].forEach((r,i)=>{hx.beginPath();hx.arc(cx,cy,r,0,Math.PI*2);hx.strokeStyle=g+(0.06-i*.015+sp*.04)+')';hx.lineWidth=1;hx.stroke()});
+  hx.save();hx.translate(cx,cy);hx.rotate(ha);
+  hx.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI*2/6-Math.PI/6;hx.lineTo(42*Math.cos(a),42*Math.sin(a))}
+  hx.closePath();hx.strokeStyle=g+(0.35+sp*.35)+')';hx.lineWidth=1.5;hx.stroke();hx.restore();
+  hx.save();hx.translate(cx,cy);hx.rotate(-ha*1.7);
+  hx.beginPath();for(let i=0;i<3;i++){const a=i*Math.PI*2/3-Math.PI/2;hx.lineTo(22*Math.cos(a),22*Math.sin(a))}
+  hx.closePath();hx.strokeStyle=g+(0.45+sp*.3)+')';hx.lineWidth=1;hx.stroke();hx.restore();
+  const gr=hx.createRadialGradient(cx,cy,0,cx,cy,26);gr.addColorStop(0,g+(0.18*sp)+')');gr.addColorStop(1,g+'0)');
+  hx.beginPath();hx.arc(cx,cy,26,0,Math.PI*2);hx.fillStyle=gr;hx.fill();
+  hx.beginPath();hx.arc(cx,cy,3+sp*3,0,Math.PI*2);hx.fillStyle=g+(0.6+sp*.4)+')';hx.fill();
+  hx.strokeStyle=g+(0.08+sp*.06)+')';hx.lineWidth=.5;hx.beginPath();hx.moveTo(cx-70,cy);hx.lineTo(cx+70,cy);hx.moveTo(cx,cy-70);hx.lineTo(cx,cy+70);hx.stroke();
+  for(let i=0;i<12;i++){const a=i*Math.PI*2/12,r1=58,r2=i%3===0?52:55;hx.beginPath();hx.moveTo(cx+r1*Math.cos(a),cy+r1*Math.sin(a));hx.lineTo(cx+r2*Math.cos(a),cy+r2*Math.sin(a));hx.strokeStyle=g+(i%3===0?.45:.18)+')';hx.lineWidth=i%3===0?1.5:.8;hx.stroke()}
+  ha+=hs==='thinking'?.05:hs==='speaking'?.035:.009;
+  requestAnimationFrame(dh);
+}
+dh();
+
+// WAVE
+const wc=document.getElementById('wc'),wx=wc.getContext('2d');
+let wd=new Array(80).fill(0),wa=false;
+function dw(){
+  const W=wc.width,H=wc.height,t=Date.now()/1000;
+  wx.clearRect(0,0,W,H);
+  if(!wa)for(let i=0;i<wd.length;i++)wd[i]=Math.sin(i/wd.length*Math.PI*4+t*2)*3;
+  const bw=W/wd.length;
+  wx.strokeStyle='rgba(201,168,76,0.5)';wx.lineWidth=1;wx.beginPath();
+  wd.forEach((v,i)=>{const x=i*bw,y=H/2+v;i===0?wx.moveTo(x,y):wx.lineTo(x,y)});wx.stroke();
+  wx.strokeStyle='rgba(201,168,76,0.15)';wx.beginPath();
+  wd.forEach((v,i)=>{const x=i*bw,y=H/2-v;i===0?wx.moveTo(x,y):wx.lineTo(x,y)});wx.stroke();
+  requestAnimationFrame(dw);
+}
+dw();
+function aw(n){for(let i=0;i<wd.length;i++)wd[i]=(Math.random()-.5)*n*2}
+
+// CONFIG
+let eKey='',vId='XB0fDUnXU5powFXDhCwa',useEL=false,useBr=false;
+
+function connectEL(){
+  const k=document.getElementById('elk').value.trim();
+  if(!k)return;
+  eKey=k;useEL=true;useBr=false;
+  document.getElementById('est').textContent='✓ Connecté';
+  document.getElementById('est').className='cst ok';
+  document.getElementById('sz').className='setup ok';
+  document.getElementById('vm').textContent='VOIX: ELEVENLABS';
+}
+function pickV(el){document.querySelectorAll('.vt').forEach(v=>v.classList.remove('on'));el.classList.add('on');vId=el.dataset.vid;useBr=false;if(eKey)useEL=true}
+function useBV(){document.querySelectorAll('.vt').forEach(v=>v.classList.remove('on'));document.getElementById('bvt').classList.add('on');useBr=true;useEL=false;document.getElementById('vm').textContent='VOIX: NAVIGATEUR'}
+
+// AI
+const SYS=`Tu es Lili, Super Assistant Exécutif et Chef de Cabinet de ta CEO.
+Femme. Directe. Formelle. Militaire. Français. Vouvoiement. Max 3 phrases courtes.
+Format : Situation. Analyse. Recommandation. Expert mobilisé.
+CEO : Poitiers. Commerce Guangzhou→Guinée. PanPanGo Phase 1 Conakry. D'or et de cendre.
+8 EXPERTS : N°1 Architecte · N°2 Designer · N°3 Gardien · N°4 Dispatcher · N°5 Manager · N°6 Logisticien · N°7 Analyste · N°8 Démineur.
+PRIORITÉS : Vision → PanPanGo → Agenda.`;
+
+let hist=[],mc2=0,busy=false;
+
+async function send(){
+  if(busy)return;
+  const inp=document.getElementById('ti'),t=inp.value.trim();
+  if(!t)return;
+  inp.value='';
+  await proc(t);
+}
+
+async function proc(text){
+  if(busy)return;
+  busy=true;hs='thinking';
+  document.getElementById('sb').disabled=true;
+  document.getElementById('sm').textContent='ANALYSE...';
+  const rt=document.getElementById('rt');
+  rt.innerHTML='<span class="cb"></span>';
+  hist.push({role:'user',content:text});
+  mc2++;document.getElementById('mc').textContent='MSG: '+mc2;
+  const wi=setInterval(()=>aw(14),80);
+  try{
+    const r=await fetch('https://lili-proxy.bonnye1-dc.workers.dev',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:250,system:SYS,messages:hist})
+    });
+    clearInterval(wi);
+    if(!r.ok)throw new Error('Erreur Claude');
+    const d=await r.json(),rep=d.content?.[0]?.text||'';
+    hist.push({role:'assistant',content:rep});
+    hs='speaking';
+    await tw(rt,rep);
+    if(useEL&&eKey)await spkEL(rep);
+    else spkBr(rep);
+    document.getElementById('sm').textContent='EN ATTENTE';
+  }catch(e){
+    clearInterval(wi);
+    rt.textContent='⚠ '+e.message;
+    hs='idle';document.getElementById('sm').textContent='ERREUR';
+  }
+  busy=false;document.getElementById('sb').disabled=false;
+}
+
+async function tw(el,text){
+  el.innerHTML='';
+  const c=document.createElement('span');c.className='cb';el.appendChild(c);
+  for(let i=0;i<text.length;i++){
+    const s=document.createElement('span');s.textContent=text[i];
+    el.insertBefore(s,c);
+    await new Promise(r=>setTimeout(r,15));
+    if(i%3===0)aw(4+Math.random()*7);
+  }
+  c.remove();
+}
+
+async function spkEL(text){
+  document.getElementById('sm').textContent='LILI PARLE';
+  try{
+    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vId}`,{
+      method:'POST',
+      headers:{'Accept':'audio/mpeg','Content-Type':'application/json','xi-api-key':eKey},
+      body:JSON.stringify({text,model_id:'eleven_multilingual_v2',voice_settings:{stability:.72,similarity_boost:.8,style:.15,use_speaker_boost:true}})
+    });
+    if(!r.ok){const e=await r.json();throw new Error(e.detail?.message||'Erreur EL')}
+    const blob=await r.blob(),url=URL.createObjectURL(blob),audio=new Audio(url);
+    const wi=setInterval(()=>aw(8+Math.random()*12),90);
+    await new Promise(res=>{
+      audio.onended=()=>{clearInterval(wi);URL.revokeObjectURL(url);hs='idle';wd=new Array(80).fill(0);res()};
+      audio.onerror=()=>{clearInterval(wi);res()};
+      audio.play();
+    });
+  }catch(e){hs='idle';document.getElementById('sm').textContent='ERR EL: '+e.message.substring(0,18)}
+}
+
+function spkBr(text){
+  if(!('speechSynthesis'in window)){hs='idle';return}
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='fr-FR';u.rate=.94;u.pitch=.82;
+  const vv=window.speechSynthesis.getVoices(),fv=vv.find(v=>v.lang.startsWith('fr'));
+  if(fv)u.voice=fv;
+  const wi=setInterval(()=>aw(8+Math.random()*10),100);
+  u.onend=()=>{clearInterval(wi);hs='idle';wd=new Array(80).fill(0);document.getElementById('sm').textContent='EN ATTENTE'};
+  window.speechSynthesis.speak(u);
+}
+if('speechSynthesis'in window){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices()}
+
+// MIC
+let rec=null,isL=false;
+function togMic(){
+  if(!('webkitSpeechRecognition'in window||'SpeechRecognition'in window)){document.getElementById('rt').textContent='Utilisez Chrome pour la voix.';return}
+  if(isL){rec.stop();return}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  rec=new SR();rec.lang='fr-FR';rec.continuous=false;rec.interimResults=true;
+  rec.onstart=()=>{isL=true;wa=true;document.getElementById('mb').classList.add('on');document.getElementById('sm').textContent='ÉCOUTE...'};
+  rec.onresult=e=>{const t=Array.from(e.results).map(r=>r[0].transcript).join('');document.getElementById('ti').value=t;if(e.results[e.results.length-1].isFinal)wa=false};
+  rec.onend=()=>{isL=false;wa=false;document.getElementById('mb').classList.remove('on');document.getElementById('sm').textContent='EN ATTENTE';const t=document.getElementById('ti').value.trim();if(t){proc(t);document.getElementById('ti').value=''}};
+  rec.onerror=()=>{isL=false;wa=false;document.getElementById('mb').classList.remove('on')};
+  rec.start();
+}
+</script>
+</body>
+</html>
